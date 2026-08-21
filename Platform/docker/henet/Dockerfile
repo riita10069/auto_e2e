@@ -53,6 +53,7 @@ RUN python3.10 -m pip install --no-cache-dir \
         lyft-dataset-sdk==0.0.8 \
         networkx==2.2 \
         numba==0.58.1 \
+        numpy==1.23.4 \
         nuscenes-devkit==1.1.11 \
         opencv-python==4.8.1.78 \
         pandas==1.4.4 \
