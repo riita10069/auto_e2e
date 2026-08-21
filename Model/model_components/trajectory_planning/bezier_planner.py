@@ -27,7 +27,7 @@ class BezierPlanner(BasePlanner):
 
     """
 
-    def __init__(self, feature_dim = 3750, embed_dim = 256, num_timesteps=64, num_signals=2,
+    def __init__(self, embed_dim=256, num_timesteps=64, num_signals=2,
                  num_controls=5, egomotion_dim=256, visual_history_dim=896,
                  reasoning_mode="none"):
         super().__init__()
@@ -41,19 +41,17 @@ class BezierPlanner(BasePlanner):
                 f"num_controls ({num_controls}) cannot exceed num_timesteps "
                 f"({num_timesteps})."
             )
-      
+        self.embed_dim = embed_dim
         self.num_timesteps = num_timesteps
         self.num_signals = num_signals
         self.num_controls = num_controls
         self.egomotion_dim = egomotion_dim
         self.visual_history_dim = visual_history_dim
-        self.combined_feature_dim = feature_dim + egomotion_dim + visual_history_dim
-        self.reduced_combined_feature_dim = int(self.combined_feature_dim/2)
 
         # Context aggregation: ego state + visual history + global BEV summary.
-        self.visual_history_proj = nn.Linear(visual_history_dim, visual_history_dim)
-
-
+        self.ego_state_proj = nn.Linear(egomotion_dim, embed_dim)
+        self.visual_history_proj = nn.Linear(visual_history_dim, embed_dim)
+        self.bev_proj = nn.Linear(embed_dim, embed_dim)
 
         # Zero-init the visual-history projection so the World-Model-derived
         # visual_history starts as a STRICT no-op and the planner learns to open
@@ -68,9 +66,9 @@ class BezierPlanner(BasePlanner):
         nn.init.zeros_(self.visual_history_proj.weight)
         nn.init.zeros_(self.visual_history_proj.bias)
         self.context_mlp = nn.Sequential(
-            nn.Linear(self.combined_feature_dim, self.reduced_combined_feature_dim),
+            nn.Linear(embed_dim, embed_dim),
             nn.GELU(),
-            nn.Linear(self.reduced_combined_feature_dim, self.reduced_combined_feature_dim),
+            nn.Linear(embed_dim, embed_dim),
         )
 
         # Reasoning coupling (zero-init; no-op at init). Injects the reasoning
@@ -78,7 +76,7 @@ class BezierPlanner(BasePlanner):
         self.reasoning_coupling = ReasoningCoupling(embed_dim, mode=reasoning_mode)
 
         # Predict (num_controls x num_signals) Bezier control points.
-        self.control_head = nn.Linear(self.reduced_combined_feature_dim, num_controls * num_signals)
+        self.control_head = nn.Linear(embed_dim, num_controls * num_signals)
 
 
         # Fixed Bernstein basis [num_timesteps, num_controls] (no scipy).
@@ -123,6 +121,11 @@ class BezierPlanner(BasePlanner):
         Returns:
             trajectory: [B, num_timesteps * num_signals]
         """
+        if bev_features.ndim != 4 or bev_features.shape[1] != self.embed_dim:
+            raise ValueError(
+                f"bev_features must have shape [B,{self.embed_dim},H,W], "
+                f"got {tuple(bev_features.shape)}."
+            )
         if visual_history.shape[-1] != self.visual_history_dim:
             raise ValueError(
                 f"visual_history last dim must be {self.visual_history_dim}, "
@@ -136,11 +139,13 @@ class BezierPlanner(BasePlanner):
 
         B = bev_features.shape[0]
 
-        context = torch.cat((
-            bev_features, 
-            egomotion_history, 
-            visual_history), dim=1)
-        
+        bev_context = bev_features.mean(dim=(2, 3))
+        context = (
+            self.ego_state_proj(egomotion_history)
+            + self.visual_history_proj(visual_history)
+            + self.bev_proj(bev_context)
+        )
+
         # Zero-init reasoning residual (no-op at init; see ReasoningCoupling).
         context = self.reasoning_coupling(
             context,
@@ -163,4 +168,3 @@ class BezierPlanner(BasePlanner):
             B, self.num_timesteps * self.num_signals
         )
         return trajectory
-
