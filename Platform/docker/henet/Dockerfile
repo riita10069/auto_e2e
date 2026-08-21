@@ -33,7 +33,6 @@ RUN python3.10 -m pip install --no-cache-dir \
         -f https://download.pytorch.org/whl/torch_stable.html \
     && python3.10 -m pip install --no-cache-dir \
         numpy==1.23.4 \
-    && python3.10 -m pip install --no-cache-dir \
         mmcv-full==1.6.2 \
         -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0/index.html \
     && python3.10 -m pip install --no-cache-dir \
