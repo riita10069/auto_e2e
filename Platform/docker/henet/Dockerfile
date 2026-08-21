@@ -32,6 +32,8 @@ RUN python3.10 -m pip install --no-cache-dir \
         torchaudio==2.0.2+cu118 \
         -f https://download.pytorch.org/whl/torch_stable.html \
     && python3.10 -m pip install --no-cache-dir \
+        numpy==1.23.4 \
+    && python3.10 -m pip install --no-cache-dir \
         mmcv-full==1.6.2 \
         -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0/index.html \
     && python3.10 -m pip install --no-cache-dir \
@@ -65,7 +67,7 @@ RUN python3.10 -m pip install --no-cache-dir \
         tensorboard==2.14.0 \
         timm==0.9.12 \
         trimesh==2.35.39 \
-        yacs==0.1.9
+        yacs==0.1.8
 
 RUN git clone https://github.com/VDIGPKU/HENet.git /opt/HENet \
     && git -C /opt/HENet checkout "${HENET_REVISION}" \
