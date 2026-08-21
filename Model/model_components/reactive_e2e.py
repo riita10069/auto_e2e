@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from .backbone import Backbone
 from .feature_fusion import FeatureFusion
-from .fused_feature_pooling import FusedFeaturePooling
 from .trajectory_planning import build_planner
 from .map_encoder import build_map_encoder, build_map_bev_fusion
 from .temporal_memory import build_temporal_memory
@@ -37,12 +36,6 @@ class ReactiveE2E(nn.Module):
             fusion_mode="bev",
             image_feature_size=image_feature_size,
             view_fusion_kwargs=view_fusion_kwargs,
-        )
-
-        # Pooling and reduction of the fused image/map BEV features to a unified
-        # feature vector which can be consumed by the trajectory planner
-        self.FusedFeaturePooling = FusedFeaturePooling(
-            embed_dim=embed_dim
         )
 
         # For BEV fusion mode the spatial size is bev_h × bev_w (potentially non-square).
@@ -227,9 +220,6 @@ class ReactiveE2E(nn.Module):
         # --- Fuse image BEV + navigation BEV ---
         fused_features = self.MapBEVFusion(image_bev, navigation_bev)
 
-        # --- Reduce fused image/map BEV features into a single feature vector ---
-        feature_vector = self.FusedFeaturePooling(fused_features)
-
         # --- Temporal Memory ---
         visual_ctx, ego_ctx = self.TemporalMemory(visual_history, egomotion_history)
 
@@ -249,7 +239,7 @@ class ReactiveE2E(nn.Module):
 
         # --- Trajectory Prediction ---
         trajectory = self.TrajectoryPlanner(
-            feature_vector, visual_ctx, ego_ctx,
+            fused_features, visual_ctx, ego_ctx,
             reasoning_latent=reasoning_latent,
             reasoning_horizon_tokens=reasoning_horizon_tokens,
             **kwargs,
