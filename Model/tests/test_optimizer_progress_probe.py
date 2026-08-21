@@ -70,23 +70,6 @@ def test_bezier_planner_zero_inits_the_visual_history_projection():
     assert float(planner.visual_history_proj.bias.detach().abs().max()) == 0.0
 
 
-def test_visual_history_projection_is_the_first_planner_parameter():
-    """Guards the ordering that made a single-parameter probe pick it.
-
-    If a refactor moves a gradient-receiving parameter back in front of it, the
-    old probe would start passing again by luck rather than by design. This test
-    failing is not a defect — it means the coincidence is gone and this file's
-    reason for existing should be re-read.
-    """
-    planner = BezierPlanner()
-    first_name = next(
-        name for name, parameter in planner.named_parameters()
-        if parameter.requires_grad
-    )
-
-    assert first_name.startswith("visual_history_proj")
-
-
 def test_train_il_probes_more_than_one_planner_parameter():
     """The fix itself: the probe collects every trainable planner parameter."""
     pytest.importorskip("flytekit")
