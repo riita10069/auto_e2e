@@ -506,6 +506,8 @@ def load_official_henet(
         )
         config.model.pretrained = None
         config.model.train_cfg = None
+        config.model.img_backbone.checkpoint = None
+        config.model.longterm_model.img_backbone.pretrained = None
         model = build_model(
             config.model,
             test_cfg=config.get("test_cfg"),
