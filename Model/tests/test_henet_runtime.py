@@ -173,6 +173,7 @@ def test_input_builder_matches_official_short_and_longterm_shapes():
         HENET_INPUT_HEIGHT,
         HENET_INPUT_WIDTH,
     )
+    assert short_inputs[0].dtype == torch.float32
     assert long_inputs[0].shape == (
         1,
         54,
@@ -180,6 +181,7 @@ def test_input_builder_matches_official_short_and_longterm_shapes():
         HENET_LONGTERM_INPUT_HEIGHT,
         HENET_LONGTERM_INPUT_WIDTH,
     )
+    assert long_inputs[0].dtype == torch.float32
     assert short_inputs[1].shape == (1, 18, 4, 4)
     assert long_inputs[1].shape == (1, 54, 4, 4)
     assert short_inputs[3].shape == (1, 18, 3, 3)
