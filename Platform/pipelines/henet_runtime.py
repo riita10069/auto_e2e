@@ -248,9 +248,9 @@ def _preprocess_image(
     # HENet's mmlabNormalize receives a PIL RGB image with to_rgb=True,
     # which reverses channels before applying the official RGB statistics.
     values = values[:, :, ::-1]
-    values = (values - np.asarray(HENET_IMAGE_MEAN)) / np.asarray(
-        HENET_IMAGE_STD
-    )
+    values = (
+        values - np.asarray(HENET_IMAGE_MEAN, dtype=np.float32)
+    ) / np.asarray(HENET_IMAGE_STD, dtype=np.float32)
     image_tensor = torch.from_numpy(
         np.ascontiguousarray(values)
     ).permute(2, 0, 1)
